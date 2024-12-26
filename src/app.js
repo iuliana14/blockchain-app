@@ -66,6 +66,7 @@ App = {
 			await App.loadContract(); // Reload the contract if the account changes
 		  });
 		}
+  
 	  } catch (error) {
 		console.error("Error fetching account:", error);
 	  }
@@ -74,6 +75,7 @@ App = {
 	}
   },
   
+
   loadContract: async () => {
 	try {
 	  // Încarcă ABI-ul contractului ToDoList.json
@@ -142,6 +144,14 @@ App = {
 			//show the task
 		$newTaskTemplate.show()
 	}
+
+  },
+
+  createTask: async () => {
+	App.setLoading(true)
+	const content = $('#newTask').val()
+	await App.todoList.createTask(content, { from: App.account })
+	window.location.reload()
 
   },
 
