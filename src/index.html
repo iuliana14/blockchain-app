@@ -1,91 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-    <title>Todo List App - First Example</title>
-
-    <!-- Bootstrap -->
-    <link href="vendor/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
-    <!--[if lt IE 9]>
-      <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
-      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
-    <![endif]-->
-
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco Rewards</title>
     <style>
-      main {
-        margin-top: 60px;
-      }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group input, .input-group button {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .tab-content {
+            display: none;
+        }
+        .active-tab {
+            display: block;
+        }
+        #feedback {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+        }
+		#activitiesContainer {
+			margin-top: 20px;
+		}
 
-      #content {
-        display: none;
-      }
+		.activity {
+			background-color: #f9f9f9;
+			padding: 15px;
+			margin-bottom: 10px;
+			border-radius: 5px;
+			box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+		}
 
-      form {
-        width: 350px;
-        margin-bottom: 10px;
-      }
-
-      ul {
-        margin-bottom: 0px;
-      }
-
-      #completedTaskList .content {
-        color: grey;
-        text-decoration: line-through;
-      }
+		.activity strong {
+			color: #333;
+		}
     </style>
-  </head>
-  <body>
-    <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
-      <a class="navbar-brand col-sm-3 col-md-2 mr-0" target="_blank">Todo List - First Example</a>
-      <ul class="navbar-nav px-3">
-        <li class="nav-item text-nowrap d-none d-sm-none d-sm-block">
-          <small><a class="nav-link" href="#"><span id="account"></span></a></small>
-        </li>
-      </ul>
-    </nav>
-    <div class="container-fluid">
-      <div class="row">
-        <main role="main" class="col-lg-12 d-flex justify-content-center">
-          <div id="loader" class="text-center">
-            <p class="text-center">Loading...</p>
-          </div>
-          <div id="content">
-            <form onSubmit="App.createTask(); return false;">
-              <input id="newTask" type="text" class="form-control" placeholder="Add task..." required>
-              <input type="submit" hidden="">
-            </form>
-            <ul id="taskList" class="list-unstyled">
-              <div class="taskTemplate" class="checkbox" style="display: none">
-                <label>
-                  <input type="checkbox" />
-                  <span class="content">Task content goes here...</span>
-                </label>
-              </div>
-            </ul>
-            <ul id="completedTaskList" class="list-unstyled">
-            </ul>
-          </div>
-        </main>
-      </div>
+</head>
+<body>
+    <h1>Eco Rewards</h1>
+
+    <div class="container">
+        <!-- Taburi pentru navigare între secțiuni -->
+        <div style="text-align: center;">
+            <button onclick="switchTab('addActivityTab')">Adaugă Activitate</button>
+            <button onclick="switchTab('rewardTab')">Gestionare Recompense</button>
+        </div>
+
+        <!-- Secțiunea de Adăugare Activitate -->
+        <div id="addActivityTab" class="tab-content active-tab">
+            <h2>Adăugați Activitate</h2>
+            <div class="input-group">
+                <label for="newActivityName">Nume activitate:</label>
+                <input type="text" id="newActivityName" placeholder="Nume activitate" />
+            </div>
+            <div class="input-group">
+                <label for="newActivityReward">Recompensă pe unitate:</label>
+                <input type="number" id="newActivityReward" placeholder="Recompensă" min="0" />
+            </div>
+            <div class="input-group">
+                <button id="addActivityButton">Adaugă activitate</button>
+            </div>
+            <div id="feedback"></div>
+			<div id="activitiesContainer"></div>
+
+        </div>
+
+        <!-- Secțiunea de Gestionare Recompense -->
+        <div id="rewardTab" class="tab-content">
+            <h2>Gestionare Recompense</h2>
+            <div class="input-group">
+                <button id="checkRewardButton">Verifică Recompensa</button>
+            </div>
+            <div class="input-group">
+                <button id="claimRewardButton">Revendică Recompensa</button>
+            </div>
+			<div class="input-group">
+				<label for="depositAmount">Depune sumă (ETH):</label>
+				<input type="text" id="depositAmount" placeholder="Introdu suma de depus">
+				<button id="depositFundsButton">Depune Fonduri</button>
+			</div>
+			<p id="feedbackDeposit"></p>			
+            <div id="feedbackReward"></div>
+        </div>
     </div>
 
-    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-    <!-- Include all compiled plugins (below), or include individual files as needed -->
-    <script src="vendor/bootstrap/dist/js/bootstrap.min.js"></script>
-	<!-- Include Web3.js -->
-	<script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+    <script>
+        // JavaScript pentru schimbarea între taburi
+        function switchTab(tabId) {
+            // Ascunde toate taburile
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => {
+                tab.classList.remove('active-tab');
+            });
 
-	<!-- Include Truffle Contract -->
-	<script src="https://cdn.jsdelivr.net/npm/@truffle/contract@4.4.0/dist/truffle-contract.min.js"></script>
+            // Afișează tab-ul selectat
+            const activeTab = document.getElementById(tabId);
+            activeTab.classList.add('active-tab');
+        }
 
+        // Adăugarea activității
+        document.getElementById('addActivityButton').addEventListener('click', async () => {
+            const activityName = document.getElementById('newActivityName').value;
+            const rewardRate = document.getElementById('newActivityReward').value;
+
+            if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
+                document.getElementById('feedback').textContent = "Vă rugăm să introduceți un nume valid pentru activitate și o recompensă validă.";
+                return;
+            }
+
+            const ecoReward = await App.contracts.EcoReward.deployed();
+            try {
+                await ecoReward.addActivity(activityName, rewardRate, { from: App.account });
+                document.getElementById('feedback').textContent = `Activitatea "${activityName}" a fost adăugată cu succes!`;
+                // Poți reîncărca activitățile sau actualiza lista
+            } catch (error) {
+                console.error("Error adding activity:", error);
+                document.getElementById('feedback').textContent = "Eroare la adăugarea activității.";
+            }
+        });
+
+        // Check reward
+        document.getElementById('checkRewardButton').addEventListener('click', async () => {
+            document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
+            await App.checkRewards();
+            document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
+        });
+
+        // Claim reward
+        document.getElementById('claimRewardButton').addEventListener('click', async () => {
+            document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
+            await App.claimReward();
+            document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
+        });
+
+		document.getElementById('depositFundsButton').addEventListener('click', async () => {
+		document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
+		await App.depositFunds();
+		document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
+		});
+
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@truffle/contract@4.4.0/dist/truffle-contract.min.js"></script>
+    
     <script src="app.js"></script>
-  </body>
+</body>
 </html>

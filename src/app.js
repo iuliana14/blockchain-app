@@ -1,177 +1,213 @@
-
 App = {
-  loading: false,
-  contracts: {},
+    web3Provider: null,
+    contracts: {},
+    account: null,
 
-  load: async () => {
-    // Încarcă aplicația ...
-    await App.loadWeb3()
-    await App.loadAccount()
-    await App.loadContract()
-	await App.render()
-  },
+    init: async () => {
+        console.log("App initialized.");
+        return await App.initWeb3();
+    },
 
-  loadWeb3: async () => {
-    if (window.ethereum) {
-      // Browsere DApp moderne (de exemplu, Metamask)
-      App.web3Provider = window.ethereum;
-      window.web3 = new Web3(window.ethereum);  // Corectat: inițializează Web3 cu provider-ul Ethereum
+    initWeb3: async () => {
+        if (typeof web3 !== 'undefined') {
+            App.web3Provider = web3.currentProvider;
+        } else {
+            App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+        }
+        web3 = new Web3(App.web3Provider);
+        return await App.initContract();
+    },
 
-      try {
-        // Cere permisiunea utilizatorului pentru accesarea conturilor
-        await window.ethereum.request({ method: 'eth_requestAccounts' });
-        console.log("Connected to Metamask successfully.");
-      } catch (error) {
-        console.error("User denied account access:", error);
-      }
-    } else if (window.web3) {
-      // Browsere DApp mai vechi
-      App.web3Provider = window.web3.currentProvider;
-      window.web3 = new Web3(window.web3.currentProvider);  // Corectat: inițializează Web3 cu provider-ul existent
-      console.log("Legacy Web3 provider detected.");
-    } else {
-      // Browsere non-DApp
-      window.alert("Non-Ethereum browser detected. You should consider trying MetaMask!");
-    }
+    initContract: async () => {
+        const response = await fetch('EcoReward.json');
+        const EcoRewardArtifact = await response.json();
+        App.contracts.EcoReward = TruffleContract(EcoRewardArtifact);
+        App.contracts.EcoReward.setProvider(App.web3Provider);
 
-    // Verifică dacă Web3 a fost inițializat corect
-    if (window.web3) {
-      console.log("Web3 initialized:", window.web3);
-    } else {
-      console.error("Failed to initialize Web3.");
-    }
-  },
+        App.account = (await web3.eth.getAccounts())[0];
+        console.log(`Using account: ${App.account}`);
 
-  loadAccount: async () => {
-	if (window.web3) {
-	  try {
-		// Fetch the available accounts
-		const accounts = await window.web3.eth.getAccounts();
-  
-		if (accounts.length === 0) {
-		  console.warn("No accounts found. Please ensure Metamask is unlocked.");
-		  alert("Please log in to your Metamask account.");
-		  return;
+        await App.loadActivities();
+        await App.updateRewardBalance();
+
+        App.bindEvents();
+    },
+
+    bindEvents: () => {
+        document.getElementById('logActivityButton').addEventListener('click', App.logEcoActivity);
+        document.getElementById('claimRewardButton').addEventListener('click', App.claimReward);
+        document.getElementById('depositFundsButton').addEventListener('click', App.depositFunds);
+        document.getElementById('checkRewardsButton').addEventListener('click', App.checkRewards);
+        document.getElementById('addActivityButton').addEventListener('click', App.addActivity); // Buton pentru adăugarea activităților
+    },
+
+    loadActivities: async () => {
+		if (!App.contracts.EcoReward) {
+			console.error("Contractul EcoReward nu a fost inițializat.");
+			return;
 		}
-  
-		// Set the default account
-		App.account = accounts[0];
-		console.log("Connected Account:", App.account);
-  
-		// Listen for account changes in Metamask
-		if (window.ethereum) {
-		  window.ethereum.on('accountsChanged', async (newAccounts) => {
-			App.account = newAccounts[0];
-			console.log("Account changed to:", App.account);
-			await App.loadContract(); // Reload the contract if the account changes
-		  });
+	
+		try {
+			const ecoReward = App.contracts.EcoReward;
+			const activities = await ecoReward.methods.getActivities().call(); // Obține array-ul de obiecte Activity
+	
+			const activitiesContainer = document.getElementById('activitiesContainer');
+			activitiesContainer.innerHTML = '';  // Curăță containerul de activități
+	
+			// Afișează activitățile
+			activities.forEach(activity => {
+				const activityElement = document.createElement('div');
+				activityElement.classList.add('activity');
+				activityElement.innerHTML = `
+					<strong>Activitate:</strong> ${activity.name}<br>
+					<strong>Recompensă:</strong> ${activity.rewardRate} Wei
+				`;
+				activitiesContainer.appendChild(activityElement);
+			});
+		} catch (error) {
+			console.error("Eroare la încărcarea activităților:", error);
 		}
-  
-	  } catch (error) {
-		console.error("Error fetching account:", error);
-	  }
-	} else {
-	  console.error("Web3 is not initialized, cannot fetch account.");
-	}
-  },
-  
+    },
 
-  loadContract: async () => {
-	try {
-	  // Încarcă ABI-ul contractului ToDoList.json
-	  const todoList = await $.getJSON('ToDoList.json');
-	  
-	  // Creează contractul cu Truffle Contract
-	  App.contracts.TodoList = TruffleContract(todoList);
-	  
-	  // Setează provider-ul pentru contract folosind provider-ul Web3
-	  App.contracts.TodoList.setProvider(web3.currentProvider);
-	  
-	  // Obține instanța contractului
-	  App.todoList = await App.contracts.TodoList.deployed();
-	  console.log('Contract loaded and hydrated:', App.todoList);
-	  
-	} catch (err) {
-	  console.error('Contract loading or hydration failed:', err);
-	}
-  },
+    logEcoActivity: async () => {
+        const ecoReward = await App.contracts.EcoReward.deployed();
+        const activityIndex = document.getElementById('activitySelect').value;
+        const detail = document.getElementById('activityDetail').value;
 
-  render: async () => {
-	//prevent double render
-	if(App.loading) {
-		return
-	}
+        if (!detail || detail <= 0) {
+            alert("Please enter a valid detail (e.g., kg, trees, trips).");
+            return;
+        }
 
-	//update app loading state
-	App.setLoading(true)
+        try {
+            await ecoReward.logEcoActivity(activityIndex, detail, App.account, { from: App.account });
+            console.log(`Logged activity: ${activityIndex}, Detail: ${detail}`);
 
-	// render account
-	$('#account').html(App.account)
+            await App.updateRewardBalance();
+        } catch (error) {
+            console.error("Error logging activity:", error);
+        }
+    },
 
-	//render tasks
-	await App.renderTasks()
+    addActivity: async () => {
+        const activityName = document.getElementById('newActivityName').value;
+        const rewardRate = document.getElementById('newActivityReward').value;
 
-	//update loading state
-	App.setLoading(false)
-  },
+        if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
+            alert("Please enter valid activity name and reward rate.");
+            return;
+        }
 
-  renderTasks: async () => {
-	//load the task count from the blockchain
-	const taskCount = await App.todoList.taskCount()
-	const $taskTemplate = $('.taskTemplate')
+        const ecoReward = await App.contracts.EcoReward.deployed();
+        try {
+            await ecoReward.addActivity(activityName, rewardRate, { from: App.account });
+            console.log(`Added activity: ${activityName} with reward rate: ${rewardRate}`);
 
-	//render out each task with a new task template
-	for (var i = 1; i <= taskCount; i++) {
-		const task = await App.todoList.tasks(i)
-		const taskId = task[0].toNumber()
-		const taskContent = task[1]
-		const taskCompleted = task[2]
+            // Reload activities to update the list
+            await App.loadActivities();
+        } catch (error) {
+            console.error("Error adding activity:", error);
+        }
+    },
 
-		// Create the html for the task
-		const $newTaskTemplate = $taskTemplate.clone()
-		$newTaskTemplate.find('.content').html(taskContent)
-		$newTaskTemplate.find('input')
-						.prop('name', taskId)
-						.prop('checked', taskCompleted)
-						//.on('click', App.toggleCompleted)
-		
-		// Put the task in the correct list
-		if (taskCompleted) {
-			$('#completedTaskList').append($newTaskTemplate)
+    claimReward: async () => {
+		const ecoReward = await App.contracts.EcoReward.deployed();
+		const userRewards = await App.getUserRewards(App.account);
+		const contractBalance = await App.getContractBalance();
+	
+		if (userRewards > 0) {
+			if (contractBalance >= userRewards) {
+				try {
+					await ecoReward.claimReward({ from: App.account });
+					console.log(`Reward claimed: ${userRewards} points`);
+				} catch (error) {
+					console.error("Error claiming reward:", error);
+				}
+			} else {
+				alert("Contract does not have enough funds to pay the reward.");
+			}
 		} else {
-			$('#taskList').append($newTaskTemplate)
+			alert("No reward available for you.");
 		}
-			//show the task
-		$newTaskTemplate.show()
+    },
+
+    depositFunds: async () => {
+        const ecoReward = await App.contracts.EcoReward.deployed();
+        const amount = document.getElementById('depositAmount').value;
+
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid deposit amount.");
+            return;
+        }
+
+        try {
+            await ecoReward.depositFunds({ from: App.account, value: web3.utils.toWei(amount, 'ether') });
+            console.log(`Deposited ${amount} ETH to the contract.`);
+        } catch (error) {
+            console.error("Error depositing funds:", error);
+        }
+    },
+
+    checkRewards: async () => {
+		const ecoReward = await App.contracts.EcoReward.deployed();
+		try {
+			// Obținem activitățile și recompensele lor
+			const activities = await ecoReward.getActivities({ from: App.account });
+	
+			let activitiesList = "";
+			for (let i = 0; i < activities.length; i++) {
+				const activityName = activities[i].name;
+				const rewardRate = activities[i].rewardRate;
+				activitiesList += `${activityName}: ${rewardRate} points\n`;
+			}
+	
+			// Afișăm activitățile și recompensele lor
+			alert(`Your activities and rewards:\n${activitiesList}`);
+		} catch (error) {
+			console.error("Error checking activities and rewards:", error);
+			alert("Failed to check activities and rewards.");
+		}
+    },
+
+    updateRewardBalance: async () => {
+        const ecoReward = await App.contracts.EcoReward.deployed();
+        try {
+            const balance = await ecoReward.rewards(App.account);
+            document.getElementById('rewardBalance').textContent = balance.toString();
+        } catch (error) {
+            console.error("Error updating reward balance:", error);
+        }
+    },
+
+	getContractBalance: async () => {
+		const ecoReward = await App.contracts.EcoReward.deployed();
+		try {
+			// Verifică soldul contractului
+			const balance = await web3.eth.getBalance(ecoReward.address);
+			console.log(`Contract balance: ${web3.utils.fromWei(balance, 'ether')} ETH`);
+			return balance;
+		} catch (error) {
+			console.error("Error checking contract balance:", error);
+		}
+	},
+
+	getUserRewards: async (userAddress) => {
+		const ecoReward = await App.contracts.EcoReward.deployed();
+		try {
+			// Verifică recompensa disponibilă pentru utilizator
+			const rewards = await ecoReward.rewards(userAddress);
+			console.log(`User rewards: ${rewards} points`);
+			return rewards;
+		} catch (error) {
+			console.error("Error checking user rewards:", error);
+		}
 	}
-
-  },
-
-  createTask: async () => {
-	App.setLoading(true)
-	const content = $('#newTask').val()
-	await App.todoList.createTask(content, { from: App.account })
-	window.location.reload()
-
-  },
-
-  setLoading: (boolean) => {
-    App.loading = boolean
-    const loader = $('#loader')
-    const content = $('#content')
-    if (boolean) {
-      loader.show()
-      content.hide()
-    } else {
-      loader.hide()
-      content.show()
-    }
-  }
-  
+	
+	
+	
 };
 
-$(() => {
-  $(window).load(() => {
-    App.load();
-  });
+window.addEventListener('load', () => {
+    App.init();  // Inițializează aplicația
+    App.loadActivities();  // Încărcați activitățile
 });
