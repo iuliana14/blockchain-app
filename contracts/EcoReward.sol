@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 
 contract EcoReward {
     mapping(address => uint) public rewards;
-    address public admin; // Adminul care poate adăuga activități
 
     event RewardIssued(address indexed user, uint amount);
     event RewardClaimed(address indexed user, uint amount);
@@ -17,19 +16,13 @@ contract EcoReward {
     Activity[] public activities; // Lista activităților disponibile
 
     constructor() public payable {
-        admin = msg.sender; // Setăm adminul ca fiind contul care a implementat contractul
         // Inițializăm activități de bază
         addActivity("Recycling", 1);
         addActivity("Planting Trees", 2);
         addActivity("Using Public Transport", 3);
     }
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin can add activities");
-        _;
-    }
-
-    function addActivity(string memory activityName, uint rewardRate) public onlyAdmin {
+    function addActivity(string memory activityName, uint rewardRate) public {
         activities.push(Activity(activityName, rewardRate));
         emit ActivityAdded(activityName, rewardRate);
     }
@@ -41,25 +34,25 @@ contract EcoReward {
         emit RewardIssued(user, rewardAmount);
     }
 
-    function claimReward() public payable {
-        uint rewardAmount = rewards[msg.sender];
-        require(rewardAmount > 0, "No reward available");
-        require(address(this).balance >= rewardAmount, "Not enough funds in contract");
+	function claimReward() public payable {
+		uint rewardAmount = rewards[msg.sender];
 
-        rewards[msg.sender] = 0;
+		require(rewardAmount > 0, "No reward available");
+		require(address(this).balance >= rewardAmount, "Not enough funds in contract");
 
-        address recipient = msg.sender;
-        address payable recipientPayable = address(uint160(recipient));
-        recipientPayable.transfer(rewardAmount);
+		rewards[msg.sender] = 0;
+		
+        // Transferă folosind metoda `transfer`
+        msg.sender.transfer(rewardAmount);
 
-        emit RewardClaimed(msg.sender, rewardAmount);
-    }
+		emit RewardClaimed(msg.sender, rewardAmount);
+	}
+
 
     function getActivities() public view returns (Activity[] memory) {
-		return activities;
+        return activities;
     }
 
-	  // Funcție pentru a permite proprietarului să alimenteze contractul
+    // Funcție pentru a permite alimentarea contractului
     function depositFunds() public payable {}
-
 }

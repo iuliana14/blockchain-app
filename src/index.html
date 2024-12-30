@@ -105,7 +105,7 @@
         <div id="rewardTab" class="tab-content">
             <h2>Gestionare Recompense</h2>
             <div class="input-group">
-                <button id="checkRewardButton">Verifică Recompensa</button>
+                <button id="checkRewardsButton">Verifică Recompensa</button>
             </div>
             <div class="input-group">
                 <button id="claimRewardButton">Revendică Recompensa</button>
@@ -115,6 +115,7 @@
 				<input type="text" id="depositAmount" placeholder="Introdu suma de depus">
 				<button id="depositFundsButton">Depune Fonduri</button>
 			</div>
+			<div id="rewardBalance"></div>
 			<p id="feedbackDeposit"></p>			
             <div id="feedbackReward"></div>
         </div>
@@ -137,7 +138,8 @@
         // Adăugarea activității
         document.getElementById('addActivityButton').addEventListener('click', async () => {
             const activityName = document.getElementById('newActivityName').value;
-            const rewardRate = document.getElementById('newActivityReward').value;
+            const rewardRate = parseInt(document.getElementById('newActivityReward').value);
+
 
             if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
                 document.getElementById('feedback').textContent = "Vă rugăm să introduceți un nume valid pentru activitate și o recompensă validă.";
