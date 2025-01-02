@@ -17,22 +17,26 @@ contract EcoReward {
 
     constructor() public payable {
         // Inițializăm activități de bază
-        addActivity("Recycling", 1);
-        addActivity("Planting Trees", 2);
-        addActivity("Using Public Transport", 3);
+        // addActivity("Recycling", 1);
+        // addActivity("Planting Trees", 2);
+        // addActivity("Using Public Transport", 3);
     }
 
-    function addActivity(string memory activityName, uint rewardRate) public {
-        activities.push(Activity(activityName, rewardRate));
-        emit ActivityAdded(activityName, rewardRate);
-    }
+	function addAndLogActivity(
+			string memory activityName,
+			uint rewardRate,
+			address user
+		) public {
+			// Adaugă o nouă activitate
+			activities.push(Activity(activityName, rewardRate));
+			emit ActivityAdded(activityName, rewardRate);
 
-    function logEcoActivity(uint activityIndex, uint detail, address user) public {
-        require(activityIndex < activities.length, "Invalid activity index");
-        uint rewardAmount = activities[activityIndex].rewardRate * detail;
-        rewards[user] += rewardAmount;
-        emit RewardIssued(user, rewardAmount);
-    }
+			// Calculează recompensa și actualizează balanța utilizatorului
+			uint rewardAmount = rewardRate;
+			rewards[user] += rewardAmount;
+			emit RewardIssued(user, rewardAmount);
+		}
+
 
 	function claimReward() public payable {
 		uint rewardAmount = rewards[msg.sender];

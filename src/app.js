@@ -62,11 +62,27 @@ App = {
     },
 
     bindEvents: () => {
-        //document.getElementById('logActivityButton').addEventListener('click', App.logEcoActivity);
-        document.getElementById('claimRewardButton').addEventListener('click', App.claimReward);
-        document.getElementById('depositFundsButton').addEventListener('click', App.depositFunds);
-        document.getElementById('checkRewardsButton').addEventListener('click', App.checkRewards);
-        document.getElementById('addActivityButton').addEventListener('click', App.addActivity);
+		document.getElementById('addActivityButton').addEventListener('click', async () => {
+			await App.addAndLogActivity();
+		});
+	
+		document.getElementById('checkRewardsButton').addEventListener('click', async () => {
+			document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
+			await App.checkRewards();
+			document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
+		});
+	
+		document.getElementById('claimRewardButton').addEventListener('click', async () => {
+			document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
+			await App.claimReward();
+			document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
+		});
+	
+		document.getElementById('depositFundsButton').addEventListener('click', async () => {
+			document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
+			await App.depositFunds();
+			document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
+		});
     },
 
     loadActivities: async () => {
@@ -93,55 +109,33 @@ App = {
         }
     },
 
-    logEcoActivity: async () => {
-        const activityIndex = document.getElementById('activitySelect').value;
-        const detail = document.getElementById('activityDetail').value;
-        if (!detail || detail <= 0) {
-            alert("Please enter a valid detail (e.g., kg, trees, trips).");
-            return;
-        }
-        try {
-            await App.contracts.EcoRewardInstance.logEcoActivity(activityIndex, detail, { from: App.account });
-            console.log(`Logged activity: ${activityIndex}, Detail: ${detail}`);
-            await App.updateRewardBalance();
-        } catch (error) {
-            console.error("Error logging activity:", error);
-        }
-    },
-
-	addActivity: async () => {
+	addAndLogActivity: async () => {
 		const activityName = document.getElementById('newActivityName').value;
-		const rewardRate = parseInt(document.getElementById('newActivityReward').value, 10);  // Ensuring it's a number
+		const rewardRate = parseInt(document.getElementById('newActivityReward').value, 10); // Ensure it's a number
+		//const detail = parseInt(document.getElementById('activityDetail').value, 10); // Detail for the reward
+		const user = App.account;
+	
+		// Validări
 		if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
-			alert("Please enter valid activity name and reward rate.");
+			alert("Please enter a valid activity name and reward rate.");
 			return;
 		}
 	
+	
 		try {
-			// Add activity
-			await App.contracts.EcoRewardInstance.addActivity(activityName, rewardRate, { from: App.account });
-			console.log(`Added activity: ${activityName} with reward rate: ${rewardRate}`);
+			// Adăugăm activitatea și logăm recompensa într-un singur apel
+			await App.contracts.EcoRewardInstance.addAndLogActivity(activityName, rewardRate, user, { from: App.account });
 	
-			// After adding, log the activity using logEcoActivity
-			const activities = await App.contracts.EcoRewardInstance.getActivities();  // Corrected this line
-			const activityIndex = activities.length - 1; // The last added activity
+			console.log(`Activitate adăugată și logată: ${activityName}, Recompensă: ${rewardRate}`);
 	
-			const detail = 1; // Example detail (could be set dynamically)
-	
-			// Log the activity and reward
-			await App.contracts.EcoRewardInstance.logEcoActivity(activityIndex, detail, { from: App.account });
-	
-			console.log(`Logged activity: ${activityIndex}, Detail: ${detail}`);
-	
-			// Update activities list and reward balance
+			// Actualizează lista de activități și balanța recompenselor
 			await App.loadActivities();
 			await App.updateRewardBalance();
 		} catch (error) {
-			console.error("Error adding and logging activity:", error);
+			console.error("Eroare la adăugarea și logarea activității:", error);
 		}
 	},
-	
-	
+
 
     claimReward: async () => {
         const userRewards = await App.getUserRewards(App.account);
@@ -212,7 +206,7 @@ App = {
 
     getUserRewards: async (userAddress) => {
 		try {
-			const rewards = await App.contracts.EcoRewardInstance.methods.rewards(userAddress).call();
+			const rewards = await App.contracts.EcoRewardInstance.rewards(userAddress);
 			const rewardPoints = parseInt(rewards, 10); // Conversia din BigNumber în număr
 			console.log(`User rewards: ${rewardPoints} points`);
 			return rewardPoints;

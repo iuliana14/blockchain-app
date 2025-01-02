@@ -78,23 +78,24 @@
     <div class="container">
         <!-- Taburi pentru navigare între secțiuni -->
         <div style="text-align: center;">
-            <button onclick="switchTab('addActivityTab')">Adaugă Activitate</button>
-            <button onclick="switchTab('rewardTab')">Gestionare Recompense</button>
+            <button onclick="switchTab('addActivityTab')">Add activity</button>
+            <button onclick="switchTab('rewardTab')">Rewards management</button>
+			<button onclick="switchTab('depositTab')">Deposit funds</button>
         </div>
 
         <!-- Secțiunea de Adăugare Activitate -->
         <div id="addActivityTab" class="tab-content active-tab">
-            <h2>Adăugați Activitate</h2>
+            <h2>Add eco activity</h2>
             <div class="input-group">
-                <label for="newActivityName">Nume activitate:</label>
-                <input type="text" id="newActivityName" placeholder="Nume activitate" />
+                <label for="newActivityName">Activity name:</label>
+                <input type="text" id="newActivityName" placeholder="Activity name" />
             </div>
             <div class="input-group">
-                <label for="newActivityReward">Recompensă pe unitate:</label>
-                <input type="number" id="newActivityReward" placeholder="Recompensă" min="0" />
+                <label for="newActivityReward">Reward per unit:</label>
+                <input type="number" id="newActivityReward" placeholder="Reward" min="0" />
             </div>
             <div class="input-group">
-                <button id="addActivityButton">Adaugă activitate</button>
+                <button id="addActivityButton">Add activity</button>
             </div>
             <div id="feedback"></div>
 			<div id="activitiesContainer"></div>
@@ -103,23 +104,32 @@
 
         <!-- Secțiunea de Gestionare Recompense -->
         <div id="rewardTab" class="tab-content">
-            <h2>Gestionare Recompense</h2>
+            <h2>Rewards management</h2>
             <div class="input-group">
-                <button id="checkRewardsButton">Verifică Recompensa</button>
+                <button id="checkRewardsButton">Check rewards</button>
             </div>
             <div class="input-group">
-                <button id="claimRewardButton">Revendică Recompensa</button>
+                <button id="claimRewardButton">Claim rewards</button>
             </div>
-			<div class="input-group">
-				<label for="depositAmount">Depune sumă (ETH):</label>
-				<input type="text" id="depositAmount" placeholder="Introdu suma de depus">
-				<button id="depositFundsButton">Depune Fonduri</button>
-			</div>
-			<div id="rewardBalance"></div>
-			<p id="feedbackDeposit"></p>			
+			<!-- <div id="rewardBalance"></div> -->
             <div id="feedbackReward"></div>
         </div>
+
+		<!-- Secțiunea de Deposit fonduri -->
+		<div id="depositTab" class="tab-content active-tab">
+			<h2>Deposit funds</h2>
+			<div class="input-group">
+				<label for="depositAmount">Deposit an amount (ETH):</label>
+				<input type="text" id="depositAmount" placeholder="Enter the amount to deposit">
+				<button id="depositFundsButton">Deposit funds</button>
+			</div>
+			<p id="feedbackDeposit"></p>
+		</div>
+	</div>
+
     </div>
+
+
 
     <script>
         // JavaScript pentru schimbarea între taburi
@@ -134,48 +144,6 @@
             const activeTab = document.getElementById(tabId);
             activeTab.classList.add('active-tab');
         }
-
-        // Adăugarea activității
-        document.getElementById('addActivityButton').addEventListener('click', async () => {
-            const activityName = document.getElementById('newActivityName').value;
-            const rewardRate = parseInt(document.getElementById('newActivityReward').value);
-
-
-            if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
-                document.getElementById('feedback').textContent = "Vă rugăm să introduceți un nume valid pentru activitate și o recompensă validă.";
-                return;
-            }
-
-            const ecoReward = await App.contracts.EcoReward.deployed();
-            try {
-                await ecoReward.addActivity(activityName, rewardRate, { from: App.account });
-                document.getElementById('feedback').textContent = `Activitatea "${activityName}" a fost adăugată cu succes!`;
-                // Poți reîncărca activitățile sau actualiza lista
-            } catch (error) {
-                console.error("Error adding activity:", error);
-                document.getElementById('feedback').textContent = "Eroare la adăugarea activității.";
-            }
-        });
-
-        // Check reward
-        document.getElementById('checkRewardButton').addEventListener('click', async () => {
-            document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
-            await App.checkRewards();
-            document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
-        });
-
-        // Claim reward
-        document.getElementById('claimRewardButton').addEventListener('click', async () => {
-            document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
-            await App.claimReward();
-            document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
-        });
-
-		document.getElementById('depositFundsButton').addEventListener('click', async () => {
-		document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
-		await App.depositFunds();
-		document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
-		});
 
     </script>
 
