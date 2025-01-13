@@ -70,6 +70,36 @@
 		.activity strong {
 			color: #333;
 		}
+
+		.notification-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 300px;
+        }
+
+        .notification {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            animation: fade-in-out 3s forwards;
+        }
+
+        .notification.error {
+            background-color: #dc3545;
+        }
+
+        @keyframes fade-in-out {
+            0% { opacity: 0; transform: translateY(-20px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+
     </style>
 </head>
 <body>
@@ -97,8 +127,8 @@
             <div class="input-group">
                 <button id="addActivityButton">Add activity</button>
             </div>
-            <div id="feedback"></div>
-			<div id="activitiesContainer"></div>
+
+
 
         </div>
 
@@ -106,17 +136,18 @@
         <div id="rewardTab" class="tab-content">
             <h2>Rewards management</h2>
             <div class="input-group">
-                <button id="checkRewardsButton">Check rewards</button>
+                <button id="checkRewardsButton" onclick="App.checkRewards()">Check rewards</button>
             </div>
             <div class="input-group">
                 <button id="claimRewardButton">Claim rewards</button>
             </div>
-			<!-- <div id="rewardBalance"></div> -->
+			<div id="rewardBalance"></div>
             <div id="feedbackReward"></div>
+			<!-- <div id="activitiesContainer"></div> -->
         </div>
 
 		<!-- Secțiunea de Deposit fonduri -->
-		<div id="depositTab" class="tab-content active-tab">
+		<div id="depositTab" class="tab-content">
 			<h2>Deposit funds</h2>
 			<div class="input-group">
 				<label for="depositAmount">Deposit an amount (ETH):</label>
@@ -128,7 +159,9 @@
 	</div>
 
     </div>
-
+	
+	<!-- Container pentru notificări -->
+	<div id="notificationContainer" class="notification-container"></div>
 
 
     <script>
@@ -151,6 +184,6 @@
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@truffle/contract@4.4.0/dist/truffle-contract.min.js"></script>
     
-    <script src="app.js"></script>
+    <script src="app.js" defer></script>
 </body>
 </html>

@@ -61,27 +61,49 @@ App = {
         App.bindEvents();
     },
 
+	showNotification: (message, type = 'success') => {
+		const container = document.getElementById('notificationContainer');
+		const notification = document.createElement('div');
+		notification.className = `notification ${type}`;
+		notification.textContent = message;
+	
+		container.appendChild(notification);
+	
+		// Elimină notificarea după 5 secunde
+		setTimeout(() => {
+			container.removeChild(notification);
+		}, 5000);
+	},
+
     bindEvents: () => {
 		document.getElementById('addActivityButton').addEventListener('click', async () => {
+			App.showNotification("Adaugarea activitatii in curs...", 'success');
 			await App.addAndLogActivity();
+			App.showNotification("Activitatea a fost adaugata cu succes!", 'success');
 		});
 	
 		document.getElementById('checkRewardsButton').addEventListener('click', async () => {
-			document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
+			//document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
+			App.showNotification("Verificare recompensa in curs...", 'success');
 			await App.checkRewards();
-			document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
+			//document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
+			App.showNotification("Recompensa verificata cu succes!", 'success');
 		});
 	
 		document.getElementById('claimRewardButton').addEventListener('click', async () => {
-			document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
+			//document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
+			App.showNotification("Revocarea recompensei in curs...", 'success');
 			await App.claimReward();
-			document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
+			//document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
+			App.showNotification("Recompensa revendicata cu succes!", 'success');
 		});
 	
 		document.getElementById('depositFundsButton').addEventListener('click', async () => {
-			document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
+			//document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
+			App.showNotification("Depunerea fondurilor in curs...", 'success');
 			await App.depositFunds();
-			document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
+			//document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
+			App.showNotification("Fonduri depuse cu succes!", 'success');
 		});
     },
 
@@ -92,18 +114,19 @@ App = {
         }
         try {
             const activities = await App.contracts.EcoRewardInstance.getActivities();
-            const activitiesContainer = document.getElementById('activitiesContainer');
-            activitiesContainer.innerHTML = '';
+            // const activitiesContainer = document.getElementById('activitiesContainer');
+            // activitiesContainer.innerHTML = '';
 
-            activities.forEach(activity => {
-                const activityElement = document.createElement('div');
-                activityElement.classList.add('activity');
-                activityElement.innerHTML = `
-                    <strong>Activitate:</strong> ${activity.name}<br>
-                    <strong>Recompensă:</strong> ${activity.rewardRate} Wei
-                `;
-                activitiesContainer.appendChild(activityElement);
-            });
+            // activities.forEach(activity => {
+            //     const activityElement = document.createElement('div');
+            //     activityElement.classList.add('activity');
+            //     activityElement.innerHTML = `
+            //         <strong>Activitate:</strong> ${activity.name}<br>
+            //         <strong>Recompensă:</strong> ${activity.rewardRate} Wei
+            //     `;
+            //     activitiesContainer.appendChild(activityElement);
+            // });
+			console.log("Activitățile încărcate:", activities);
         } catch (error) {
             console.error("Eroare la încărcarea activităților:", error);
         }
@@ -131,8 +154,10 @@ App = {
 			// Actualizează lista de activități și balanța recompenselor
 			await App.loadActivities();
 			await App.updateRewardBalance();
+			App.showNotification(`Activitate "${activityName}" adaugata cu succes!`, 'success');
 		} catch (error) {
-			console.error("Eroare la adăugarea și logarea activității:", error);
+			console.error("Eroare la adaugarea si logarea activitatii:", error);
+			App.showNotification("Eroare la adaugarea activitatii. Va rugam sa incercati din nou.", 'error');
 		}
 	},
 
@@ -145,14 +170,16 @@ App = {
                 try {
                     await App.contracts.EcoRewardInstance.claimReward({ from: App.account });
                     console.log(`Reward claimed: ${userRewards} points`);
+					App.showNotification("Recompensa a fost revendicata cu succes!", 'success');
                 } catch (error) {
                     console.error("Error claiming reward:", error);
+					App.showNotification("Eroare la revendicarea recompensei. Incercati din nou.", 'error');
                 }
             } else {
-                alert("Contract does not have enough funds to pay the reward.");
+				App.showNotification("Contractul nu are suficiente fonduri pentru a plati recompensa, trebuie sa adaugati fonduri.", 'error');
             }
         } else {
-            alert("No reward available for you.");
+			App.showNotification("Nu aveti recompense disponibile pentru revendicare.", 'error');
         }
     },
 
@@ -170,25 +197,45 @@ App = {
         }
     },
 
-    checkRewards: async () => {
-        try {
-            const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
-            let activitiesList = "";
-            activities.forEach(activity => {
-                activitiesList += `${activity.name}: ${activity.rewardRate} points\n`;
-            });
-            alert(`Your activities and rewards:\n${activitiesList}`);
-        } catch (error) {
-            console.error("Error checking activities and rewards:", error);
-            alert("Failed to check activities and rewards.");
-        }
-    },
+    // checkRewards: async () => {
+    //     try {
+    //         const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
+    //         let activitiesList = "";
+    //         activities.forEach(activity => {
+    //             activitiesList += `${activity.name}: ${activity.rewardRate} points\n`;
+    //         });
+    //         alert(`Your activities and rewards:\n${activitiesList}`);
+    //     } catch (error) {
+    //         console.error("Error checking activities and rewards:", error);
+    //         alert("Failed to check activities and rewards.");
+    //     }
+    // },
 
+	checkRewards: async () => {
+		try {
+			const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
+			
+			// Salvează activitățile în localStorage
+			const activitiesList = activities.map(activity => ({
+				name: activity.name,
+				rewardRate: activity.rewardRate
+			}));
+			localStorage.setItem('activitiesList', JSON.stringify(activitiesList));
+	
+			// Redirecționează utilizatorul către pagina cu activități
+			window.location.href = 'activities.html';
+		} catch (error) {
+			console.error("Error checking activities and rewards:", error);
+			alert("Failed to check activities and rewards.");
+		}
+	},
+	
+	
     updateRewardBalance: async () => {
         try {
             const balance = await App.contracts.EcoRewardInstance.rewards(App.account);
 			console.log(`Current reward balance for ${App.account}: ${balance.toString()}`);
-            document.getElementById('rewardBalance').textContent = balance.toString();
+            //document.getElementById('rewardBalance').textContent = balance.toString();
         } catch (error) {
             console.error("Error updating reward balance:", error);
         }

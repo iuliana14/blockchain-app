@@ -2593,12 +2593,12 @@
         }
       },
       "links": {},
-      "address": "0x1079a1fCf4798727BF0a509681b04ec67745E731",
-      "transactionHash": "0xd51a3d518b0750f8b954ec5ee896b65c185f19088a7864484cf2d7a23e1f007b"
+      "address": "0x4db45e3670FD883D5321a0F640784d18798E2354",
+      "transactionHash": "0x71c0c55b06e33db2da2ccfbe5131ff22edafc4f0c2cd69379a2795c6e5077253"
     }
   },
   "schemaVersion": "3.0.1",
-  "updatedAt": "2025-01-02T13:54:25.476Z",
+  "updatedAt": "2025-01-13T19:02:35.593Z",
   "devdoc": {
     "methods": {}
   },
