@@ -99,7 +99,60 @@
             90% { opacity: 1; }
             100% { opacity: 0; transform: translateY(-20px); }
         }
+        .activity-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: #fff;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: background-color 0.3s, transform 0.2s;
+        }
 
+        .activity-card:hover {
+            background-color: #f8f9fa;
+            transform: translateY(-2px);
+        }
+
+        .activity-card input[type="checkbox"] {
+            margin-right: 15px;
+            transform: scale(1.2);
+            cursor: pointer;
+        }
+
+        .activity-card label {
+            flex-grow: 1;
+            font-size: 16px;
+            color: #333;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+
+        #claimSelectedButton {
+            display: block;
+            width: 100%;
+            background-color: #28a745;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        #claimSelectedButton:hover {
+            background-color: #218838;
+        }
+
+        #rewardActivities {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -141,10 +194,10 @@
             <div class="input-group">
                 <button id="claimRewardButton">Claim rewards</button>
             </div>
-			<div id="rewardBalance"></div>
-            <div id="feedbackReward"></div>
-			<!-- <div id="activitiesContainer"></div> -->
+            <div id="rewardActivities" style="display: none;"></div>
+            <p id="noActivitiesMessage" style="display: none;">No activities available to claim.</p>
         </div>
+
 
 		<!-- Secțiunea de Deposit fonduri -->
 		<div id="depositTab" class="tab-content">
@@ -157,9 +210,8 @@
 			<p id="feedbackDeposit"></p>
 		</div>
 	</div>
-
     </div>
-	
+
 	<!-- Container pentru notificări -->
 	<div id="notificationContainer" class="notification-container"></div>
 
@@ -183,7 +235,7 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.8.2/dist/web3.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@truffle/contract@4.4.0/dist/truffle-contract.min.js"></script>
-    
+
     <script src="app.js" defer></script>
 </body>
 </html>

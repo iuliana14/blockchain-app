@@ -11,7 +11,7 @@
             padding: 0;
             background-color: #f4f4f4;
         }
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #333;
         }
@@ -33,30 +33,61 @@
         .activity strong {
             color: #333;
         }
+        .no-activities {
+            color: #666;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
         <h1>Your Eco Activities</h1>
-        <div id="activitiesList"></div>
+
+        <h2>Unclaimed Activities</h2>
+        <div id="unclaimedActivities"></div>
+
+        <h2>Claimed Activities</h2>
+        <div id="claimedActivities"></div>
     </div>
 
     <script>
         // Citește activitățile din localStorage
         const activitiesList = JSON.parse(localStorage.getItem('activitiesList'));
 
-        // Dacă există activități, le afișează într-o listă
+        // Identifică secțiunile
+        const unclaimedContainer = document.getElementById('unclaimedActivities');
+        const claimedContainer = document.getElementById('claimedActivities');
+
+        // Verifică dacă există activități
+        let hasUnclaimed = false;
+        let hasClaimed = false;
+
         if (activitiesList && activitiesList.length > 0) {
-            const activitiesContainer = document.getElementById('activitiesList');
             activitiesList.forEach(activity => {
                 const activityDiv = document.createElement('div');
                 activityDiv.classList.add('activity');
-                activityDiv.innerHTML = `<strong>${activity.name}</strong>: ${activity.rewardRate} puncte`;
-                activitiesContainer.appendChild(activityDiv);
+
+                // Verifică dacă activitatea este revendicată sau nerevendicată
+                if (activity.rewardRate > 0) {
+                    activityDiv.innerHTML = `<strong>${activity.name}</strong>: ${activity.rewardRate} puncte`;
+                    unclaimedContainer.appendChild(activityDiv);
+                    hasUnclaimed = true;
+                } else {
+                    activityDiv.innerHTML = `<strong>${activity.name}</strong>: Claimed`;
+                    claimedContainer.appendChild(activityDiv);
+                    hasClaimed = true;
+                }
             });
-        } else {
-            document.getElementById('activitiesList').innerHTML = '<p>No activities available.</p>';
+        }
+
+        // Afișează mesajele individuale dacă nu există activități
+        if (!hasUnclaimed) {
+            unclaimedContainer.innerHTML = '<p class="no-activities">No unclaimed activities available.</p>';
+        }
+        if (!hasClaimed) {
+            claimedContainer.innerHTML = '<p class="no-activities">No claimed activities available.</p>';
         }
     </script>
 

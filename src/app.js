@@ -18,7 +18,7 @@ App = {
 		  window.alert("Please connect to Metamask.");
 		  return;
 		}
-	  
+		
 		// Modern dapp browsers...
 		if (window.ethereum) {
 		  window.web3 = new Web3(ethereum);
@@ -40,7 +40,7 @@ App = {
 		  console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
 		}
 	  },
-	  
+
 
     loadAccount: async () => {
         const accounts = await web3.eth.getAccounts();
@@ -56,7 +56,6 @@ App = {
     },
 
     render: async () => {
-        await App.loadActivities();
         await App.updateRewardBalance();
         App.bindEvents();
     },
@@ -66,9 +65,9 @@ App = {
 		const notification = document.createElement('div');
 		notification.className = `notification ${type}`;
 		notification.textContent = message;
-	
+
 		container.appendChild(notification);
-	
+
 		// Elimină notificarea după 5 secunde
 		setTimeout(() => {
 			container.removeChild(notification);
@@ -81,76 +80,74 @@ App = {
 			await App.addAndLogActivity();
 			App.showNotification("Activitatea a fost adaugata cu succes!", 'success');
 		});
-	
+
 		document.getElementById('checkRewardsButton').addEventListener('click', async () => {
-			//document.getElementById('feedbackReward').textContent = "Verificare recompensă în curs...";
 			App.showNotification("Verificare recompensa in curs...", 'success');
 			await App.checkRewards();
-			//document.getElementById('feedbackReward').textContent = "Recompensa verificată!";
 			App.showNotification("Recompensa verificata cu succes!", 'success');
 		});
-	
+
 		document.getElementById('claimRewardButton').addEventListener('click', async () => {
-			//document.getElementById('feedbackReward').textContent = "Revocarea recompensei în curs...";
-			App.showNotification("Revocarea recompensei in curs...", 'success');
-			await App.claimReward();
-			//document.getElementById('feedbackReward').textContent = "Recompensa revendicată cu succes!";
-			App.showNotification("Recompensa revendicata cu succes!", 'success');
+			// Încarcă activitățile pentru revendicare
+			await App.showSelectableActivities();
 		});
-	
+
 		document.getElementById('depositFundsButton').addEventListener('click', async () => {
-			//document.getElementById('feedbackDeposit').textContent = "Depunere în curs...";
 			App.showNotification("Depunerea fondurilor in curs...", 'success');
 			await App.depositFunds();
-			//document.getElementById('feedbackDeposit').textContent = "Fonduri depuse cu succes!";
 			App.showNotification("Fonduri depuse cu succes!", 'success');
 		});
+		document.getElementById('claimRewardButton').addEventListener('click', async () => {
+			App.showSelectableActivities();
+		});
+
     },
 
-    loadActivities: async () => {
-        if (!App.contracts.EcoRewardInstance) {
-            console.error("Contractul EcoReward nu a fost încărcat.");
-            return;
-        }
-        try {
-            const activities = await App.contracts.EcoRewardInstance.getActivities();
-            // const activitiesContainer = document.getElementById('activitiesContainer');
-            // activitiesContainer.innerHTML = '';
+    loadActivities : async () => {
+		try {
+			const activities = await App.contracts.EcoRewardInstance.getActivities();
+			const container = document.getElementById("rewardActivities");
+			const noActivitiesMessage = document.getElementById("noActivitiesMessage");
 
-            // activities.forEach(activity => {
-            //     const activityElement = document.createElement('div');
-            //     activityElement.classList.add('activity');
-            //     activityElement.innerHTML = `
-            //         <strong>Activitate:</strong> ${activity.name}<br>
-            //         <strong>Recompensă:</strong> ${activity.rewardRate} Wei
-            //     `;
-            //     activitiesContainer.appendChild(activityElement);
-            // });
-			console.log("Activitățile încărcate:", activities);
-        } catch (error) {
-            console.error("Eroare la încărcarea activităților:", error);
-        }
-    },
+			container.innerHTML = "";
+			let hasActivities = false;
+
+			activities.forEach((activity, index) => {
+				if (activity.rewardRate > 0) {
+					const activityDiv = document.createElement("div");
+					activityDiv.innerHTML = `
+						<input type="checkbox" id="activity-${index}" value="${index}">
+						<label for="activity-${index}">${activity.name} - ${activity.rewardRate} puncte</label>
+					`;
+					container.appendChild(activityDiv);
+					hasActivities = true;
+				}
+			});
+
+			noActivitiesMessage.style.display = hasActivities ? "none" : "block";
+		} catch (error) {
+			console.error("Error loading activities:", error);
+		}
+	},
 
 	addAndLogActivity: async () => {
 		const activityName = document.getElementById('newActivityName').value;
 		const rewardRate = parseInt(document.getElementById('newActivityReward').value, 10); // Ensure it's a number
-		//const detail = parseInt(document.getElementById('activityDetail').value, 10); // Detail for the reward
 		const user = App.account;
-	
+
 		// Validări
 		if (!activityName || !rewardRate || isNaN(rewardRate) || rewardRate <= 0) {
 			alert("Please enter a valid activity name and reward rate.");
 			return;
 		}
-	
-	
+
+
 		try {
 			// Adăugăm activitatea și logăm recompensa într-un singur apel
 			await App.contracts.EcoRewardInstance.addAndLogActivity(activityName, rewardRate, user, { from: App.account });
-	
+
 			console.log(`Activitate adăugată și logată: ${activityName}, Recompensă: ${rewardRate}`);
-	
+
 			// Actualizează lista de activități și balanța recompenselor
 			await App.loadActivities();
 			await App.updateRewardBalance();
@@ -163,24 +160,37 @@ App = {
 
 
     claimReward: async () => {
-        const userRewards = await App.getUserRewards(App.account);
-        const contractBalance = await App.getContractBalance();
-        if (userRewards > 0) {
-            if (contractBalance >= userRewards) {
-                try {
-                    await App.contracts.EcoRewardInstance.claimReward({ from: App.account });
-                    console.log(`Reward claimed: ${userRewards} points`);
-					App.showNotification("Recompensa a fost revendicata cu succes!", 'success');
-                } catch (error) {
-                    console.error("Error claiming reward:", error);
-					App.showNotification("Eroare la revendicarea recompensei. Incercati din nou.", 'error');
-                }
-            } else {
-				App.showNotification("Contractul nu are suficiente fonduri pentru a plati recompensa, trebuie sa adaugati fonduri.", 'error');
-            }
-        } else {
-			App.showNotification("Nu aveti recompense disponibile pentru revendicare.", 'error');
-        }
+        try {
+			const userRewards = await App.getUserRewards(App.account); // Obține recompensele utilizatorului
+
+			// Verifică dacă există recompense disponibile
+			if (userRewards <= 0) {
+				App.showNotification("Nu aveți recompense disponibile pentru revendicare.", 'error');
+				return; // Nu continuăm funcția
+			}
+
+			const contractBalance = await App.getContractBalance(); // Obține balanța contractului
+			console.log(`Contract balance: ${web3.utils.fromWei(balance, 'ether')} ETH`);
+
+			// Verifică dacă contractul are suficiente fonduri
+			if (contractBalance < userRewards) {
+				App.showNotification("Contractul nu are suficiente fonduri pentru a plăti recompensa.", 'error');
+				return; // Nu continuăm funcția
+			}
+
+			// Dacă toate condițiile sunt îndeplinite, inițiază tranzacția
+			await App.contracts.EcoRewardInstance.claimReward({ from: App.account });
+			App.showNotification("Recompensa a fost revendicată cu succes!", 'success');
+
+			// Actualizează activitățile și balanța recompenselor
+			await App.loadActivities();
+			await App.updateRewardBalance();
+		} catch (error) {
+			console.error("Error claiming reward:", error);
+			console.log(`Contract balance: ${web3.utils.fromWei(balance, 'ether')} ETH`);
+
+			App.showNotification("Eroare la revendicarea recompensei. Încercați din nou.", 'error');
+		}
     },
 
     depositFunds: async () => {
@@ -197,31 +207,130 @@ App = {
         }
     },
 
-    // checkRewards: async () => {
-    //     try {
-    //         const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
-    //         let activitiesList = "";
-    //         activities.forEach(activity => {
-    //             activitiesList += `${activity.name}: ${activity.rewardRate} points\n`;
-    //         });
-    //         alert(`Your activities and rewards:\n${activitiesList}`);
-    //     } catch (error) {
-    //         console.error("Error checking activities and rewards:", error);
-    //         alert("Failed to check activities and rewards.");
-    //     }
-    // },
+	claimSelectedRewards: async (selectedIndexes) => {
+		try {
+			if (!selectedIndexes || selectedIndexes.length === 0) {
+				App.showNotification("Nu ați selectat nicio activitate pentru revendicare.", "error");
+				return;
+			}
+
+			console.log("Selected indexes to claim:", selectedIndexes); // Verifică indexurile
+
+			// Verificare balanță contract înainte de revendicare
+			const initialBalanceWei = await App.getContractBalance();
+			const initialBalanceEth = web3.utils.fromWei(initialBalanceWei, 'ether');
+			console.log(`Balanța contractului înainte de revendicare: ${initialBalanceEth} ETH`);
+			App.showNotification(`Balanța contractului înainte de revendicare: ${initialBalanceEth} ETH`, "info");
+
+	
+			if (parseFloat(initialBalanceEth) <= 0) {
+				App.showNotification("Balanța contractului este insuficientă.", "error");
+				return;
+			}
+
+			// Apelul contractului
+			await App.contracts.EcoRewardInstance.claimSelectedRewards(selectedIndexes, { from: App.account });
+			App.showNotification("Recompense revendicate cu succes!", "success");
+
+
+			// Verificare balanță contract după revendicare
+			const finalBalanceWei = await App.getContractBalance();
+			const finalBalanceEth = web3.utils.fromWei(finalBalanceWei, 'ether');
+			console.log(`Balanța contractului după revendicare: ${finalBalanceEth} ETH`);
+			App.showNotification(`Balanța contractului după revendicare: ${finalBalanceEth} ETH`, "info");			
+
+			// Actualizează interfața
+			await App.loadActivities();
+			await App.updateRewardBalance();
+		} catch (error) {
+			console.error("Error claiming selected rewards:", error);
+			App.showNotification("Eroare la revendicarea recompenselor. Încercați din nou.", "error");
+		}
+	},
+	
+	showSelectableActivities: async () => {
+		try {
+			const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
+			console.log("Fetched activities raw:", activities);
+
+			const container = document.getElementById('rewardActivities');
+			container.innerHTML = ''; // Resetează lista
+
+			let hasUnclaimedActivities = false;
+
+			// Parcurge activitățile și afișează-le doar pe cele nerevendicate
+			activities.forEach((activity, index) => {
+				const rewardRate = typeof activity.rewardRate !== 'undefined'
+					? parseInt(activity.rewardRate, 10)
+					: parseInt(activity[1], 10);
+
+				const name = typeof activity.name !== 'undefined'
+					? activity.name
+					: activity[0];
+
+				console.log(`Activity ${index}: Name = ${name}, RewardRate = ${rewardRate}`);
+
+				// Afișează doar activitățile cu `rewardRate > 0`
+				if (rewardRate > 0) {
+					const activityDiv = document.createElement('div');
+					activityDiv.innerHTML = `
+						<div class="activity-card">
+							<input type="checkbox" id="activity-${index}" value="${index}">
+							<label for="activity-${index}">${name} - ${rewardRate} puncte</label>
+						</div>
+					`;
+					container.appendChild(activityDiv);
+					hasUnclaimedActivities = true;
+				}
+			});
+
+			// Verifică dacă există activități nerevendicate
+			if (hasUnclaimedActivities) {
+				container.style.display = "block";
+			} else {
+				container.style.display = "none";
+				App.showNotification("Nu există activități disponibile pentru revendicare.", "error");
+			}
+
+			// Adaugă butonul de revendicare
+			const claimButton = document.getElementById('claimSelectedButton');
+			if (hasUnclaimedActivities) {
+				if (!claimButton) {
+					const newClaimButton = document.createElement('button');
+					newClaimButton.id = 'claimSelectedButton';
+					newClaimButton.textContent = 'Claim Selected Rewards';
+					newClaimButton.onclick = async () => {
+						const selectedIndexes = Array.from(
+							container.querySelectorAll('input[type="checkbox"]:checked')
+						).map(input => parseInt(input.value));
+						console.log("Selected indexes:", selectedIndexes);
+						await App.claimSelectedRewards(selectedIndexes);
+					};
+					container.parentNode.appendChild(newClaimButton);
+				}
+			} else {
+				// Ascunde butonul dacă nu există activități nerevendicate
+				if (claimButton) {
+					claimButton.remove();
+				}
+			}
+		} catch (error) {
+			console.error('Error fetching activities:', error);
+		}
+	},
+
 
 	checkRewards: async () => {
 		try {
 			const activities = await App.contracts.EcoRewardInstance.getActivities({ from: App.account });
-			
+
 			// Salvează activitățile în localStorage
 			const activitiesList = activities.map(activity => ({
 				name: activity.name,
-				rewardRate: activity.rewardRate
+				rewardRate: activity.rewardRate // Stocăm rewardRate pentru a determina starea
 			}));
 			localStorage.setItem('activitiesList', JSON.stringify(activitiesList));
-	
+
 			// Redirecționează utilizatorul către pagina cu activități
 			window.location.href = 'activities.html';
 		} catch (error) {
@@ -229,13 +338,11 @@ App = {
 			alert("Failed to check activities and rewards.");
 		}
 	},
-	
-	
+
     updateRewardBalance: async () => {
         try {
             const balance = await App.contracts.EcoRewardInstance.rewards(App.account);
 			console.log(`Current reward balance for ${App.account}: ${balance.toString()}`);
-            //document.getElementById('rewardBalance').textContent = balance.toString();
         } catch (error) {
             console.error("Error updating reward balance:", error);
         }

@@ -7,6 +7,7 @@ contract EcoReward {
     event RewardIssued(address indexed user, uint amount);
     event RewardClaimed(address indexed user, uint amount);
     event ActivityAdded(string activityName, uint rewardRate);
+	event DebugActivity(uint index, uint rewardRate);
 
     struct Activity {
         string name;
@@ -16,10 +17,6 @@ contract EcoReward {
     Activity[] public activities; // Lista activităților disponibile
 
     constructor() public payable {
-        // Inițializăm activități de bază
-        // addActivity("Recycling", 1);
-        // addActivity("Planting Trees", 2);
-        // addActivity("Using Public Transport", 3);
     }
 
 	function addAndLogActivity(
@@ -27,11 +24,11 @@ contract EcoReward {
 			uint rewardRate,
 			address user
 		) public {
-			// Adaugă o nouă activitate
+			// Adauga o noua activitate
 			activities.push(Activity(activityName, rewardRate));
 			emit ActivityAdded(activityName, rewardRate);
 
-			// Calculează recompensa și actualizează balanța utilizatorului
+			// Calculeaza recompensa si actualizeaza balanta utilizatorului
 			uint rewardAmount = rewardRate;
 			rewards[user] += rewardAmount;
 			emit RewardIssued(user, rewardAmount);
@@ -46,7 +43,6 @@ contract EcoReward {
 
 		rewards[msg.sender] = 0;
 		
-        // Transferă folosind metoda `transfer`
         msg.sender.transfer(rewardAmount);
 
 		emit RewardClaimed(msg.sender, rewardAmount);
@@ -57,6 +53,30 @@ contract EcoReward {
         return activities;
     }
 
-    // Funcție pentru a permite alimentarea contractului
+    // Functie pentru a permite alimentarea contractului
     function depositFunds() public payable {}
+
+	function claimSelectedRewards(uint[] memory activityIndexes) public {
+    uint totalReward = 0;
+
+    for (uint i = 0; i < activityIndexes.length; i++) {
+        uint index = activityIndexes[i];
+        require(index < activities.length, "Invalid activity index");
+
+        Activity storage activity = activities[index];
+        emit DebugActivity(index, activity.rewardRate); // Debugging event
+        require(activity.rewardRate > 0, "Activity already claimed");
+
+        totalReward += activity.rewardRate;
+        activity.rewardRate = 0;
+    }
+
+    require(totalReward > 0, "No valid rewards to claim");
+    require(address(this).balance >= totalReward, "Not enough funds in contract");
+
+	// Transfer recompense utilizatorului
+    rewards[msg.sender] = 0;
+    msg.sender.transfer(totalReward); // Transfer fonduri
+    emit RewardClaimed(msg.sender, totalReward);
+}
 }
